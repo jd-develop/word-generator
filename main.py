@@ -6,24 +6,22 @@ from pprint import pprint
 import random
 
 LETTER_COMBINATIONS = FRENCH_LETTER_COMBINATIONS
+CONSONANTS = "bcçdfghjklmnpqrstvwxz"
 possible_letters = set()
-for couple in LETTER_COMBINATIONS:
-    for letter in couple:
+print("Computing possible letters...")
+for trio in LETTER_COMBINATIONS:
+    for letter in trio:
         possible_letters.add(letter.lower())
-print(possible_letters)
 
 
-def calculate_probability(couple):
-    total = 0
-    if LETTER_COMBINATIONS.get(couple) is None:
+def calculate_probability(trio):
+    if LETTER_COMBINATIONS.get(trio) is None:
         return 0
-    for couple_ in LETTER_COMBINATIONS:
-        if LETTER_COMBINATIONS[couple_] is not None:
-            total += LETTER_COMBINATIONS[couple_]
+    total = len(LETTER_COMBINATIONS.values())
     if total == 0:
         return 0
     else:
-        return (LETTER_COMBINATIONS[couple]*100) / total
+        return (LETTER_COMBINATIONS[trio]*100) / total
 
 
 letters_in_the_word = input("How many letters in the word? ")
@@ -38,30 +36,44 @@ try:
 except Exception:
     words_number = 5
 
+print("Creating words...")
 word = ''
 words = []
 for word_ in range(words_number):
     # possible_letters is a set
-    while (letter := random.choice(list(possible_letters))) in "-ôêàïöûëùèäü":  # totally arbitrary
-        letter = random.choice(list(possible_letters))
-    word += letter
-    for letter_ in range(letters_in_the_word):
+    possible_start_trios_initial = [random.choice(list(LETTER_COMBINATIONS.keys())) for i in range(50)]
+    possible_start_trios_cleaned = []
+    for e in possible_start_trios_initial:
+        if len(e) == 3:
+            if not e[0] == e[1]:
+                if e[0] not in "-èäâëîïöôüûù":
+                    if not (e[0] in CONSONANTS and e[0] in CONSONANTS and e[0] in CONSONANTS):
+                        possible_start_trios_cleaned.append(e)
+    possible_start_trios_pondered = [e for e in possible_start_trios_cleaned for i in range(LETTER_COMBINATIONS.get(e, 0))]
+    word += random.choice(possible_start_trios_pondered)
+    while len(word) != letters_in_the_word:
         letter_list = []
-        for letter in list(possible_letters):
-            if letter_ == letters_in_the_word - 1:
-                probability = calculate_probability(word[:1] + letter) + calculate_probability(letter) * 50
-            else:
-                probability = calculate_probability(word[:1] + letter)
-            for loop in range(int(probability * 500)):
-                letter_list.append(letter)
-        try:
-            best_letter = random.choice(letter_list)
-        except IndexError:
-            print(word)
-            print(letter_list)
-            raise
-        word += best_letter
-    words.append(word)
+        while len(letter_list) == 0:
+            for letter in list(possible_letters):
+                if len(word) == letters_in_the_word - 1:
+                    probability = calculate_probability(word[-1:] + letter) * 100 + calculate_probability(letter) # * 100
+                else:
+                    probability = calculate_probability(word[-2:] + letter)
+                for loop in range(int(probability)):
+                    letter_list.append(letter)
+            if len(letter_list) == 0:
+                word = word[:-1]
+
+        word += random.choice(letter_list)
+    new_word = ""
+    for i in range(len(word)):
+        if i+3 > len(word):
+            new_word += word[i]
+        elif word[i] == "e" and word[i+1] in CONSONANTS and word[i+2] not in CONSONANTS:
+            new_word += "è"
+        else:
+            new_word += word[i]
+    words.append(new_word)
     word = ''
 
-pprint(words)
+print(words)
